@@ -48,163 +48,230 @@ subscribe = {"type": "sub", "topic": "/device/TrafficLight/SN-TL-20230410-F01/me
 sub = json.dumps(subscribe)
 
 
-def Cross(lenchrom, chrom, sizepop, bound):
+def cross(len_chrom, chrom, size_pop, bound):
     # 本函数完成交叉操作
-    # pcorss                input  : 交叉概率
-    # lenchrom              input  : 染色体的长度
+    # p_cross                input  : 交叉概率
+    # len_chrom              input  : 染色体的长度
     # chrom     input  : 染色体群
-    # sizepop               input  : 种群规模
+    # size_pop               input  : 种群规模
     # ret                   output : 交叉后的染色体
     k1 = 0.2
     k2 = 0.9
+    k3 = 0.001
+    k4 = 0.01
+    eta_c = 1
     # 计算适应度
     f = []
-    for j in range(sizepop):
+    for j in range(size_pop):
         x = chrom[j]  # 解码
         # print("x: ", x)
-        f.append(fun(x))  # 染色体的适应度
+        f.append(fitness_function(x))  # 染色体的适应度
 
-    fmax = max(f)  # 适应度最大值
-    fmin = min(f)  # 适应度最小值
-    favg = np.mean(f)  # 适应度平均值
-    # print(test1)
+    f_max = max(f)  # 适应度最大值
+    f_min = min(f)  # 适应度最小值
+    f_avg = np.mean(f)  # 适应度平均值
     # 每一轮for循环中，可能会进行一次交叉操作，染色体是随机选择的，交叉位置也是随机选择的，%但该轮for循环中是否进行交叉操作则由交叉概率决定（continue控制）
-    for i in range(sizepop):
+    for i in range(size_pop):
         # 随机选择两个染色体进行交叉
-        pick = np.random.random_sample((1, 2))
-        while np.prod(pick) == 0:
-            pick = np.random.random_sample((1, 2))
+        pick_sp = np.random.random_sample((1, 2))
+        while np.prod(pick_sp) == 0:
+            pick_sp = np.random.random_sample((1, 2))
 
-        index_array = (pick * sizepop).tolist()[0]
-        print("index_array: ", index_array)
+        index_array = (pick_sp * size_pop).tolist()[0]
         index = [math.ceil(val) for val in index_array]
-        for i in range(len(index)):
-            if index[i] >= len(chrom):
-                index[i] = index[i] - 1
+        for j in range(len(index)):
+            if index[j] >= len(chrom):
+                index[j] = index[j] - 1
 
-        f1 = fun(chrom[index[0]])  # 个体适应度值
-        f2 = fun(chrom[index[1]])  # 个体适应度值
+        f1 = fitness_function(chrom[index[0]])  # 个体适应度值
+        f2 = fitness_function(chrom[index[1]])  # 个体适应度值
         f3 = min(f1, f2)  # 两者中小者
-        if f3 <= favg:
-            # k1 * (fmax - f3) / (fmax - favg)
-            pcross = ((k2 - k1) * (1 - i / sizepop)) / (
-                    1 + np.exp(10 * (2 * pow((favg - f3) / (favg - fmin), (favg / fmin)) - 1))) + k1
+        if f3 <= f_avg:
+            # k1 * (f_max - f3) / (f_max - f_avg)
+            p_cross = ((k2 - k1) * (1 - i / size_pop)) / (
+                    1 + np.exp(10 * (2 * pow((f_avg - f3) / (f_avg - f_min), (f_avg / f_min)) - 1))) + k1
         else:
-            pcross = k1
+            p_cross = k1
 
         # 交叉概率决定是否进行交叉
-        pick = random.random()
-        while pick == 0:
-            pick = random.random()
+        pick_cr = random.random()
+        while pick_cr == 0:
+            pick_cr = random.random()
 
-        if pick > pcross:
+        if pick_cr > p_cross:
             continue
 
         flag = 0
         while flag == 0:
             tmp_chrom = copy.deepcopy(chrom)
             # 随机选择交叉位
-            pick = random.random()
-            while pick == 0:
-                pick = random.random()
-            index_array = (pick * sum(lenchrom)).tolist()[0]
-            pos = math.ceil(index_array)  # 随机选择进行交叉的位置，即选择第几个变量进行交叉，注意：两个染色体交叉的位置相同
-            pick = random.random()  # 交叉开始
+            pick_ind = random.random()
+            while pick_ind == 0:
+                pick_ind = random.random()
+
+            index_array = (pick_ind * len(sum(len_chrom)))
+            pos = int(index_array)  # 随机选择进行交叉的位置，即选择第几个变量进行交叉，注意：两个染色体交叉的位置相同
+
+            r = random.random()
+            if r <= 0.5:
+                betaq = (2 * r) ** (1.0 / (eta_c + 1.0))
+            else:
+                betaq = (0.5 / (1.0 - r)) ** (1.0 / (eta_c + 1.0))
+                # pick_ind = random.random()  # 交叉开始
             v1 = tmp_chrom[index[0]][pos]
             v2 = tmp_chrom[index[1]][pos]
-            tmp_chrom[index[0]][pos] = pick * v2 + (1 - pick) * v1
-            tmp_chrom[index[1]][pos] = pick * v1 + (1 - pick) * v2  # 交叉结束
+            # print("v1", v1, v2)
+            ylow = min(v1, v2)
+            yup = max(v1, v2)
+            # tmp_chrom[index[0]][pos] = pick_ind * v2 + (1 - pick_ind) * v1
+            # tmp_chrom[index[1]][pos] = pick_ind * v1 + (1 - pick_ind) * v2  # 交叉结束
+            tmp_chrom[index[0]][pos] = 0.5 * ((1 + betaq) * v1 + (1 - betaq) * v2)
+            tmp_chrom[index[1]][pos] = 0.5 * ((1 - betaq) * v1 + (1 + betaq) * v2)
 
-            flag1 = test(lenchrom, bound, tmp_chrom[index[0]])  # 检验染色体1的可行性
-            flag2 = test(lenchrom, bound, tmp_chrom[index[1]])  # 检验染色体2的可行性
-
-            if flag1 * flag2 == 0:
-                flag = 1
-            else:
-                flag = 0
+            # print("tmp_chrom[index[0]][pos] before", tmp_chrom[index[0]][pos])
+            # print("tmp_chrom[index[1]][pos] before", tmp_chrom[index[1]][pos])
+            tmp_chrom[index[0]][pos] = round(tmp_chrom[index[0]][pos])
+            tmp_chrom[index[1]][pos] = round(tmp_chrom[index[1]][pos])
+            tmp_chrom[index[0]][pos] = min(max(tmp_chrom[index[0]][pos], ylow), yup)
+            tmp_chrom[index[1]][pos] = min(max(tmp_chrom[index[1]][pos], ylow), yup)
+            # print("tmp_chrom[index[0]][pos]", tmp_chrom[index[0]][pos])
+            # print("tmp_chrom[index[1]][pos]", tmp_chrom[index[1]][pos])
+            # print("change before", chrom[index[0]])
+            # print("change before", chrom[index[1]])
+            flag1 = test(tmp_chrom[index[0]])  # 检验染色体1的可行性
+            flag2 = test(tmp_chrom[index[1]])  # 检验染色体2的可行性
+            # print("flag1", flag1)
+            # print("flag2", flag2)
             # 如果两个染色体不是都可行，则重新交叉
+            if flag1 * flag2 == 0:
+                flag = 0
+            else:
+                flag = 1
+                chrom[index[0]][pos] = tmp_chrom[index[0]][pos]
+                chrom[index[1]][pos] = tmp_chrom[index[1]][pos]
+                # print("change later", chrom[index[0]])
+                # print("change later", chrom[index[1]])
+
+            # index_array = (pick_ind * sum(lenchrom)).tolist()[0]
+            # pos = math.ceil(index_array)  # 随机选择进行交叉的位置，即选择第几个变量进行交叉，注意：两个染色体交叉的位置相同
+            # pick = random.random()  # 交叉开始
+            # v1 = tmp_chrom[index[0]][pos]
+            # v2 = tmp_chrom[index[1]][pos]
+            # tmp_chrom[index[0]][pos] = pick * v2 + (1 - pick) * v1
+            # tmp_chrom[index[1]][pos] = pick * v1 + (1 - pick) * v2  # 交叉结束
+            #
+            # flag1 = test(lenchrom, bound, tmp_chrom[index[0]])  # 检验染色体1的可行性
+            # flag2 = test(lenchrom, bound, tmp_chrom[index[1]])  # 检验染色体2的可行性
+            #
+            # if flag1 * flag2 == 0:
+            #     flag = 1
+            # else:
+            #     flag = 0
+            # # 如果两个染色体不是都可行，则重新交叉
 
     ret = copy.deepcopy(chrom)
     return ret
 
 
-def Mutation(lenchrom, chrom, sizepop, num, maxgen, bound):
+def Mutation(len_chrom, chrom, size_pop, num, max_gen, bound):
     chrom = copy.deepcopy(chrom)
     #   % 本函数完成变异操作
-    #    % pcorss                input  : 变异概率
-    #   % lenchrom              input  : 染色体长度
+    #    % p_cross                input  : 变异概率
+    #   % len_chrom              input  : 染色体长度
     #   % chrom     input  : 染色体群
-    #  % sizepop               input  : 种群规模
+    #  % size_pop               input  : 种群规模
     #   % opts                  input  : 变异方法的选择
     #    % pop                   input  : 当前种群的进化代数和最大的进化代数信息
     #    % bound                 input  : 每个个体的上届和下届
-    #    % maxgen                input  ：最大迭代次数
+    #    % max_gen                input  ：最大迭代次数
     #    % num                   input  : 当前迭代次数
     #    % ret                   output : 变异后的染色体
-    k3 = 0.001
-    k4 = 0.01
+    k1 = 0.2
+    k2 = 0.9
+    k3 = 0.01
+    k4 = 0.1
     # 计算适应度
     f = []
-    for j in range(sizepop):
+    for j in range(size_pop):
         x = chrom[j]  # 解码
-        f.append(fun(x))  # 染色体的适应度
+        f.append(fitness_function(x))  # 染色体的适应度
 
-    fmax = max(f)  # 适应度最大值
-    fmin = min(f)  # 适应度最小值
-    favg = np.mean(f)  # 适应度平均值
+    f_max = max(f)  # 适应度最大值
+    f_min = min(f)  # 适应度最小值
+    f_avg = np.mean(f)  # 适应度平均值
 
-    for i in range(sizepop):  # 每一轮for循环中，可能会进行一次变异操作，染色体是随机选择的，变异位置也是随机选择的，
+    for i in range(size_pop):  # 每一轮for循环中，可能会进行一次变异操作，染色体是随机选择的，变异位置也是随机选择的，
         # 但该轮for循环中是否进行变异操作则由变异概率决定（continue控制）
         # 随机选择一个染色体进行变异
-        pick = random.random()
-        while pick == 0:
-            pick = random.random()
+        pick_sp = random.random()
+        while pick_sp == 0:
+            pick_sp = random.random()
 
-        index = math.ceil(pick * sizepop)
+        index = math.ceil(pick_sp * size_pop)
         if index >= len(chrom):
             index -= 1
-        f1 = fun(chrom[index])  # 个体适应度值
+        f1 = fitness_function(chrom[index])  # 个体适应度值
         f3 = f1
-        if f3 == 0:
-            pmutation = k3
-        elif f3 >= favg:
-            pmutation = ((k4 - k3) * (1 - i / sizepop)) / (
-                    1 + np.exp(10 * (2 * pow((favg - f3) / (favg - fmin), (favg / fmin)) - 1))) + k3
+        if f3 >= f_avg:
+            pmutation = ((k4 - k3) - k3 * i / max_gen) / (
+                    1 + np.exp(10 * ((f_avg / f_min) * (f_avg - f3) / (f_avg - f_min) - 1))) + k3
         else:
             pmutation = k3
         # 变异概率决定该轮循环是否进行变异
-        pick = random.random()
-        if pick > pmutation:
+        pick_cr = random.random()
+        if pick_cr > pmutation:
             continue
         flag = 0
         num = 0
         chrom1 = chrom[i]
         while flag == 0 and num <= 20:
+            tmp_chrom = copy.deepcopy(chrom)
             # 变异位置
-            pick = random.random()
-            while pick == 0:
-                pick = random.random()
+            pick_loc = random.random()
+            while pick_loc == 0:
+                pick_loc = random.random()
 
-            pos = math.ceil((pick * sum(lenchrom)).tolist()[0])  # 随机选择了染色体变异的位置，即选择了第pos个变量进行变异
-
+            pos = int((pick_loc * sum(len_chrom)).tolist()[0])  # 随机选择了染色体变异的位置，即选择了第pos个变量进行变异
+            ylow = 10
+            yup = 40
+            eta_m = 1
+            # y = tmp_chrom[i][pos]
+            delta1 = 1.0 * (tmp_chrom[i][pos] - ylow) / (yup - ylow)
+            delta2 = 1.0 * (yup - tmp_chrom[i][pos]) / (yup - ylow)
             pick = random.random()  # 变异开始
-            fg = pow((random.random() * (1 - num / maxgen)), 2)
-            if pick > 0.5:
-                chrom[i][pos] = chrom[i][pos] + (bound[pos][1] - chrom[i][pos]) * fg
+            mut_pow = 1.0 / (eta_m + 1.0)
+            if pick <= 0.5:
+                xy = 1.0 - delta1
+                val = 2.0 * pick + (1.0 - 2.0 * pick) * (xy ** (eta_m + 1.0))
+                deltaq = val ** mut_pow - 1.0
             else:
-                chrom[i][pos] = chrom[i][pos] - (chrom[i][pos] - bound[pos][1]) * fg
+                xy = 1.0 - delta2
+                val = 2.0 * (1.0 - pick) + 2.0 * (pick - 0.5) * (xy ** (eta_m + 1.0))
+                deltaq = 1.0 - val ** mut_pow
+            tmp_chrom[i][pos] = tmp_chrom[i][pos] + deltaq * (yup - ylow)
+            tmp_chrom[i][pos] = min(yup, max(tmp_chrom[i][pos], ylow))
 
-            flag = test(lenchrom, bound, chrom[i])  # 检验染色体的可行性
-            num = num + 1  # 检验次数设置
+            # fg = pow((random.random() * (1 - num / maxgen)), 2)
+            # if pick > 0.5:
+            #     chrom[i][pos] = chrom[i][pos] + (bound[pos][1] - chrom[i][pos]) * fg
+            # else:
+            #     chrom[i][pos] = chrom[i][pos] - (chrom[i][pos] - bound[pos][1]) * fg
 
-        if num > 20:  # 如果大于20次，则不变异
-            chrom[i] = chrom1
+            flag1 = test(tmp_chrom[i])  # 检验染色体的可行性
+            if flag1 == 1:
+                flag = 1
+                chrom[i][pos] = tmp_chrom[i][pos]
+
+        #     num = num + 1  # 检验次数设置
+        #
+        # if num > 20:  # 如果大于20次，则不变异
+        #     chrom[i] = chrom1
 
     ret = copy.deepcopy(chrom)
     return ret
 
 
-def test(len_chrom, bound, code):
+def test(code):
     global wait_time
     if len(code) == 1:
         t = code[0]
@@ -320,47 +387,41 @@ def code(bound):
     return ret.tolist()[0]
 
 
-def select(individuals, sizepop):
+def select(individuals, size_pop):
     individuals = copy.deepcopy(individuals)
     # 该函数用于进行选择操作
-    # individuals input    种群信息
-    # sizepop     input    种群规模
-    # ret         output   选择后的新种群
-
     # 求适应度值倒数
     fitness1 = [1 / val for val in individuals["fitness"]]
     # individuals.fitness为个体适应度值
 
     # 个体选择概率
-    sumfitness = sum(fitness1)
-    sumf = [val / sumfitness for val in fitness1]
+    sum_fitness = sum(fitness1)
+    sum_f = [val / sum_fitness for val in fitness1]
 
     # 采用轮盘赌法选择新个体实际上就是选取适应度值小的
     index = []
-    # sizepop为种群数
-    for i in range(sizepop):
+    # size_pop为种群数
+    for i in range(size_pop):
         pick = random.random()
         while pick == 0:
             pick = random.random()
-        for j in range(sizepop):
-            pick = pick - sumf[j]
+        for j in range(size_pop):
+            pick = pick - sum_f[j]
             if pick < 0:
                 index.append(j)
                 break
-    # print("index:", index)
+
     # 新种群
     new_individuals = [individuals["chrom"][j] for j in index]
-    # print("new_individuals:", new_individuals)
     # individuals.chrom为种群中个体
     individuals["chrom"] = new_individuals
     new_fitness = [individuals["fitness"][j] for j in index]
-    # print("new_fitness", new_fitness)
     individuals["fitness"] = new_fitness
     ret = copy.deepcopy(individuals)
     return ret
 
 
-def fun(x):
+def fitness_function(x):
     # 城市交通信号系统参数
     # C = 80  # 信号周期
     time_phase = tls_status.time_1[0] + tls_status.time_1[1] + tls_status.time_1[2] + tls_status.time_1[3]
@@ -448,13 +509,13 @@ def main():
     # 染色体设置
     len_chrom = np.ones((1, 4))  # t1、t2、t3
     if tls_status.direction_0 == 2:
-        bound = [[10, 35], [10, 35], [10, 35], [10, 35]]
+        bound = [[15, 35], [15, 35], [15, 35], [15, 35]]
     if tls_status.direction_1 == 2:
-        bound = [[10, 40], [10, 35], [10, 35], [10, 35]]  # 数据范围
+        bound = [[15, 40], [15, 35], [15, 35], [15, 35]]  # 数据范围
     if tls_status.direction_2 == 2:
-        bound = [[10, 40], [10, 35], [10, 35], [10, 35]]  # 数据范围
+        bound = [[15, 40], [15, 35], [15, 35], [15, 35]]  # 数据范围
     if tls_status.direction_3 == 2:
-        bound = [[10, 40], [10, 35], [10, 35], [10, 35]]
+        bound = [[15, 40], [15, 35], [15, 35], [15, 35]]
     # ---------------------------种群初始化------------------------------------
     individuals = {'fitness': np.zeros((1, size_pop)).tolist()[0], 'chrom': []}  # 将种群信息定义为字典
     avg_fitness = []  # 每一代种群的平均适应度
@@ -466,9 +527,8 @@ def main():
         individuals["chrom"].append(code(bound))
         # 编码（binary和grey的编码结果为一个实数，float的编码结果为一个实数向量）
         x = individuals["chrom"][i]
-        # print("check the x value",x)
         # 计算适应度
-        individuals["fitness"][i] = fun(x)
+        individuals["fitness"][i] = fitness_function(x)
         # 染色体的适应度
     # 找最好的染色体
     best_fitness = min(individuals["fitness"])
@@ -482,11 +542,11 @@ def main():
     for i in range(max_gen):
         print('迭代次数： {} '.format(i + 1))
         # 选择
-        print("slect")
+        print("select")
         individuals = select(individuals, size_pop)
-        """# 交叉
-        print("Cross")
-        individuals["chrom"] = Cross(lenchrom, individuals["chrom"], sizepop, bound)"""
+        # 交叉
+        print("cross")
+        individuals["chrom"] = cross(len_chrom, individuals["chrom"], size_pop, bound)
         # 变异
         print("Mutation")
         individuals["chrom"] = Mutation(len_chrom, individuals["chrom"], size_pop, i, max_gen, bound)
@@ -494,7 +554,7 @@ def main():
         # 计算适应
         for j in range(size_pop):
             x = individuals["chrom"][j]  # 解码
-            individuals["fitness"][j] = fun(x)  # 染色体的适应度
+            individuals["fitness"][j] = fitness_function(x)  # 染色体的适应度
 
         f_max = max(individuals["fitness"])  # 适应度最大值
         f_min = min(individuals["fitness"])  # 适应度最小值
@@ -516,7 +576,7 @@ def main():
         trace.append(best_fitness)  # 记录每一代进化中最好的适应度
 
     x = best_chrom  # 最佳个体值
-    D = fun(best_chrom)  # 延误误差D
+    D = fitness_function(best_chrom)  # 延误误差D
     print("绿信比差D", D)
     # E = D/sum(sum(q))     # 平均延误E
     # print("平均延误E",E)
