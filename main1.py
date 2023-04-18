@@ -444,12 +444,7 @@ def main():
     size_pop = 100  # 种群规模
     delta = 0.1
     bound = [0, 0, 0, 0]
-    # 城市交通信号系统参数
-    # data = scio.loadmat("data.mat")  #包含交通流量q以及饱和流量xij
-    # q=data["q"]
-    # xij=data["xij"]
-    # q = q/3600;      # 转化为秒s
-    # xij = xij/3600;  # 转化为秒s
+
     # 染色体设置
     len_chrom = np.ones((1, 4))  # t1、t2、t3
     if tls_status.direction_0 == 2:
