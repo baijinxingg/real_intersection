@@ -380,10 +380,13 @@ def test(code):
 
 def code(bound):
     ret = []
-    pick = np.random.random_sample((1, len(bound)))
-    bound = np.array(bound)
-    ret = np.trunc(bound[:, 0] + (bound[:, 1] - bound[:, 0]) * pick)  # 线性插值，编码结果以实数向量存入ret中
-    # flag = test(len_chrom, bound, ret)  # 检验染色体的可行性
+    flag = 0
+    while flag == 0:
+        pick = np.random.random_sample((1, len(bound)))
+        bound = np.array(bound)
+        ret = np.trunc(bound[:, 0] + (bound[:, 1] - bound[:, 0]) * pick)  # 线性插值，编码结果以实数向量存入ret中
+        # flag = test(len_chrom, bound, ret)  # 检验染色体的可行性
+        flag = test(ret[0])
     return ret.tolist()[0]
 
 
