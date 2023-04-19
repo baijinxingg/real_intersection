@@ -160,8 +160,8 @@ def cross(len_chrom, chrom, size_pop, bound):
             # tmp_chrom[index[0]][pos] = pick * v2 + (1 - pick) * v1
             # tmp_chrom[index[1]][pos] = pick * v1 + (1 - pick) * v2  # 交叉结束
             #
-            # flag1 = test(lenchrom, bound, tmp_chrom[index[0]])  # 检验染色体1的可行性
-            # flag2 = test(lenchrom, bound, tmp_chrom[index[1]])  # 检验染色体2的可行性
+            # flag1 = test(len_chrom, bound, tmp_chrom[index[0]])  # 检验染色体1的可行性
+            # flag2 = test(len_chrom, bound, tmp_chrom[index[1]])  # 检验染色体2的可行性
             #
             # if flag1 * flag2 == 0:
             #     flag = 1
@@ -173,7 +173,7 @@ def cross(len_chrom, chrom, size_pop, bound):
     return ret
 
 
-def Mutation(len_chrom, chrom, size_pop, num, max_gen, bound):
+def mutation(len_chrom, chrom, size_pop, num, max_gen, bound):
     chrom = copy.deepcopy(chrom)
     #   % 本函数完成变异操作
     #    % p_cross                input  : 变异概率
@@ -258,6 +258,7 @@ def Mutation(len_chrom, chrom, size_pop, num, max_gen, bound):
             #     chrom[i][pos] = chrom[i][pos] - (chrom[i][pos] - bound[pos][1]) * fg
 
             flag1 = test(tmp_chrom[i])  # 检验染色体的可行性
+            # print("flag1", flag1)
             if flag1 == 1:
                 flag = 1
                 chrom[i][pos] = tmp_chrom[i][pos]
@@ -277,105 +278,156 @@ def test(code):
         t = code[0]
     else:
         t = code
+    # print("code", code)
+    # print("code[0]", code[0])
     phase_period = t[0] + t[1] + t[2] + t[3]  # 信号周期
     # time_consume = 500 m / 11 m/s
     time_consume = 45.45  # 正常到达路口需要消耗的时间
     # time_arrival = 0  # 经过计算到达路口时间
-
+    yellow_light_time = 3
     if tls_status.direction_0 == 2:
-        if tls_status.remain_0 > time_consume:
+        if tls_status.remain_0 + yellow_light_time > time_consume:
             wait_time = 0
-        elif (tls_status.remain_0 <= time_consume) and (tls_status.remain_0 + t[1] > time_consume):
-            wait_time = tls_status.remain_0 + t[1] - time_consume + t[2] + t[3]
-        elif (tls_status.remain_0 + t[1] <= time_consume) and (tls_status.remain_0 + t[1] + t[2] > time_consume):
-            wait_time = tls_status.remain_0 + t[1] + t[2] - time_consume + t[3]
-        elif (tls_status.remain_0 + t[1] + t[2] <= time_consume) and (
-                tls_status.remain_0 + t[1] + t[2] + t[3] > time_consume):
-            wait_time = tls_status.remain_0 + t[1] + t[2] + t[3] - time_consume
-        elif (tls_status.remain_0 + t[1] + t[2] + t[3] <= time_consume) and (
-                tls_status.remain_0 + t[1] + t[2] + t[3] + t[0] > time_consume):
+        elif (tls_status.remain_0 + yellow_light_time <= time_consume) and (
+                tls_status.remain_0 + yellow_light_time + t[1] + yellow_light_time > time_consume):
+            wait_time = tls_status.remain_0 + yellow_light_time + t[1] + yellow_light_time - time_consume + t[
+                2] + yellow_light_time + t[3] + yellow_light_time
+        elif (tls_status.remain_0 + yellow_light_time + t[1] + yellow_light_time <= time_consume) and (
+                tls_status.remain_0 + yellow_light_time + t[1] + yellow_light_time + t[
+            2] + yellow_light_time > time_consume):
+            wait_time = tls_status.remain_0 + yellow_light_time + t[1] + yellow_light_time + t[
+                2] + yellow_light_time - time_consume + t[3] + yellow_light_time
+        elif (tls_status.remain_0 + yellow_light_time + t[1] + yellow_light_time + t[
+            2] + yellow_light_time <= time_consume) and (
+                tls_status.remain_0 + yellow_light_time + t[1] + yellow_light_time + t[2] + yellow_light_time + t[
+            3] + yellow_light_time > time_consume):
+            wait_time = tls_status.remain_0 + yellow_light_time + t[1] + yellow_light_time + t[2] + yellow_light_time + \
+                        t[3] + yellow_light_time - time_consume
+        elif (tls_status.remain_0 + yellow_light_time + t[1] + yellow_light_time + t[2] + yellow_light_time + t[
+            3] + yellow_light_time <= time_consume) and (
+                tls_status.remain_0 + yellow_light_time + t[1] + yellow_light_time + t[2] + yellow_light_time + t[
+            3] + yellow_light_time + t[0] + yellow_light_time > time_consume):
             wait_time = 0
 
     if tls_status.direction_1 == 2:
-        if (tls_status.remain_1 <= time_consume) and (tls_status.remain_1 + t[2] > time_consume):
-            wait_time = tls_status.remain_1 + t[2] - time_consume + t[3]
-        elif (tls_status.remain_1 + t[2] <= time_consume) and (tls_status.remain_1 + t[2] + t[3] > time_consume):
-            wait_time = tls_status.remain_0 + t[2] + t[3] - time_consume
-        elif (tls_status.remain_1 + t[2] + t[3] <= time_consume) and (
-                tls_status.remain_1 + t[2] + t[3] + t[0] > time_consume):
+        if (tls_status.remain_1 + yellow_light_time <= time_consume) and (
+                tls_status.remain_1 + yellow_light_time + t[2] + yellow_light_time > time_consume):
+            wait_time = tls_status.remain_1 + yellow_light_time + t[2] + yellow_light_time - time_consume + t[
+                3] + yellow_light_time
+        elif (tls_status.remain_1 + yellow_light_time + t[2] + yellow_light_time <= time_consume) and (
+                tls_status.remain_1 + yellow_light_time + t[2] + yellow_light_time + t[
+            3] + yellow_light_time > time_consume):
+            wait_time = tls_status.remain_0 + yellow_light_time + t[2] + yellow_light_time + t[
+                3] + yellow_light_time - time_consume
+        elif (tls_status.remain_1 + yellow_light_time + t[2] + yellow_light_time + t[
+            3] + yellow_light_time <= time_consume) and (
+                tls_status.remain_1 + yellow_light_time + t[2] + yellow_light_time + t[3] + yellow_light_time + t[
+            0] + yellow_light_time > time_consume):
             wait_time = 0
-        elif tls_status.remain_1 > time_consume:
-            wait_time = tls_status.remain_1 - time_consume + t[2] + t[3]
-        elif (tls_status.remain_1 + t[2] + t[3] + t[0] <= time_consume) and (
-                tls_status.remain_1 + t[2] + t[3] + t[0] + t[1] > time_consume):
-            wait_time = tls_status.remain_1 + t[2] + t[3] + t[0] + t[1] - time_consume + t[2] + t[3]
-        elif (tls_status.remain_1 + t[2] + t[3] + t[0] + t[1] <= time_consume) and (
-                tls_status.remain_1 + t[2] + t[3] + t[0] + t[1] + t[2] > time_consume):
-            wait_time = tls_status.remain_1 + t[2] + t[3] + t[0] + t[1] + t[2] - time_consume + t[3]
-        elif (tls_status.remain_1 + t[2] + t[3] + t[0] + t[1] + t[2] <= time_consume) and (
-                tls_status.remain_1 + t[2] + t[3] + t[0] + t[1] + t[2] + t[3] > time_consume):
-            wait_time = tls_status.remain_1 + t[2] + t[3] + t[0] + t[1] + t[2] + t[3] - time_consume
-        elif (tls_status.remain_1 + t[2] + t[3] + t[0] + t[1] + t[2] + t[3] <= time_consume) and (
-                tls_status.remain_1 + t[2] + t[3] + t[0] + t[1] + t[2] + t[3] + t[0] > time_consume):
+        elif tls_status.remain_1 + yellow_light_time > time_consume:
+            wait_time = tls_status.remain_1 + yellow_light_time - time_consume + t[2] + yellow_light_time + t[
+                3] + yellow_light_time
+        elif (tls_status.remain_1 + yellow_light_time + t[2] + yellow_light_time + t[3] + yellow_light_time + t[
+            0] + yellow_light_time <= time_consume) and (
+                tls_status.remain_1 + yellow_light_time + t[2] + yellow_light_time + t[3] + yellow_light_time + t[
+            0] + yellow_light_time + t[1] + yellow_light_time > time_consume):
+            wait_time = tls_status.remain_1 + yellow_light_time + t[2] + yellow_light_time + t[3] + yellow_light_time + \
+                        t[0] + yellow_light_time + t[1] + yellow_light_time - time_consume + t[2] + yellow_light_time + \
+                        t[3] + yellow_light_time
+        elif (tls_status.remain_1 + yellow_light_time + t[2] + yellow_light_time + t[3] + yellow_light_time + t[
+            0] + yellow_light_time + t[1] + yellow_light_time <= time_consume) and (
+                tls_status.remain_1 + yellow_light_time + t[2] + yellow_light_time + t[3] + yellow_light_time + t[
+            0] + yellow_light_time + t[1] + yellow_light_time + t[2] + yellow_light_time > time_consume):
+            wait_time = tls_status.remain_1 + yellow_light_time + t[2] + yellow_light_time + t[3] + yellow_light_time + \
+                        t[0] + yellow_light_time + t[1] + yellow_light_time + t[2] + yellow_light_time - time_consume + \
+                        t[3] + yellow_light_time
+        elif (tls_status.remain_1 + yellow_light_time + t[2] + yellow_light_time + t[3] + yellow_light_time + t[
+            0] + yellow_light_time + t[1] + yellow_light_time + t[2] + yellow_light_time <= time_consume) and (
+                tls_status.remain_1 + yellow_light_time + t[2] + yellow_light_time + t[3] + yellow_light_time + t[
+            0] + yellow_light_time + t[1] + yellow_light_time + t[2] + yellow_light_time + t[
+                    3] + yellow_light_time > time_consume):
+            wait_time = tls_status.remain_1 + yellow_light_time + t[2] + yellow_light_time + t[3] + yellow_light_time + \
+                        t[0] + yellow_light_time + t[1] + yellow_light_time + t[2] + yellow_light_time + t[
+                            3] + yellow_light_time - time_consume
+        elif (tls_status.remain_1 + yellow_light_time + t[2] + yellow_light_time + t[3] + yellow_light_time + t[
+            0] + yellow_light_time + t[1] + yellow_light_time + t[2] + yellow_light_time + t[
+                  3] + yellow_light_time <= time_consume) and (
+                tls_status.remain_1 + yellow_light_time + t[2] + yellow_light_time + t[3] + yellow_light_time + t[
+            0] + yellow_light_time + t[1] + yellow_light_time + t[2] + yellow_light_time + t[3] + yellow_light_time + t[
+                    0] + yellow_light_time > time_consume):
             wait_time = 0
 
     if tls_status.direction_2 == 2:
-        if (tls_status.remain_2 <= time_consume) and (tls_status.remain_2 + t[3] > time_consume):
-            wait_time = tls_status.remain_2 + t[3] - time_consume
-        elif (tls_status.remain_2 + t[3] <= time_consume) and (tls_status.remain_2 + t[3] + t[0] > time_consume):
+        if (tls_status.remain_2 + yellow_light_time <= time_consume) and (
+                tls_status.remain_2 + yellow_light_time + t[3] + yellow_light_time > time_consume):
+            wait_time = tls_status.remain_2 + yellow_light_time + t[3] + yellow_light_time - time_consume
+        elif (tls_status.remain_2 + yellow_light_time + t[3] + yellow_light_time <= time_consume) and (
+                tls_status.remain_2 + yellow_light_time + t[3] + yellow_light_time + t[
+            0] + yellow_light_time > time_consume):
             wait_time = 0
-        elif (tls_status.remain_2 + t[3] + t[0] <= time_consume) and (
-                tls_status.remain_2 + t[3] + t[0] + t[1] > time_consume):
-            wait_time = tls_status.remain_2 + t[3] + t[0] + t[1] - time_consume + t[2] + t[3]
-        elif (tls_status.remain_2 + t[3] + t[0] + t[1] <= time_consume) and (
-                tls_status.remain_2 + t[3] + t[0] + t[1] + t[2] > time_consume):
-            wait_time = tls_status.remain_2 + t[3] + t[0] + t[1] + t[2] - time_consume + t[3]
-        elif (tls_status.remain_2 + t[3] + t[0] + t[1] + t[2] <= time_consume) and (
-                tls_status.remain_2 + t[3] + t[0] + t[1] + t[2] + t[3] > time_consume):
-            wait_time = tls_status.remain_2 + t[3] + t[0] + t[1] + t[2] + t[3] - time_consume
-        elif (tls_status.remain_2 + t[3] + t[0] + t[1] + t[2] + t[3] <= time_consume) and (
-                tls_status.remain_2 + t[3] + t[0] + t[1] + t[2] + t[3] + t[0] > time_consume):
+        elif (tls_status.remain_2 + yellow_light_time + t[3] + yellow_light_time + t[
+            0] + yellow_light_time <= time_consume) and (
+                tls_status.remain_2 + yellow_light_time + t[3] + yellow_light_time + t[0] + yellow_light_time + t[
+            1] + yellow_light_time > time_consume):
+            wait_time = tls_status.remain_2 + yellow_light_time + t[3] + yellow_light_time + t[0] + yellow_light_time + \
+                        t[1] + yellow_light_time - time_consume + t[2] + yellow_light_time + t[3] + yellow_light_time
+        elif (tls_status.remain_2 + yellow_light_time + t[3] + yellow_light_time + t[0] + yellow_light_time + t[
+            1] + yellow_light_time <= time_consume) and (
+                tls_status.remain_2 + yellow_light_time + t[3] + yellow_light_time + t[0] + yellow_light_time + t[
+            1] + yellow_light_time + t[2] + yellow_light_time > time_consume):
+            wait_time = tls_status.remain_2 + yellow_light_time + t[3] + yellow_light_time + t[0] + yellow_light_time + \
+                        t[1] + yellow_light_time + t[2] + yellow_light_time - time_consume + t[3] + yellow_light_time
+        elif (tls_status.remain_2 + yellow_light_time + t[3] + yellow_light_time + t[0] + yellow_light_time + t[
+            1] + yellow_light_time + t[2] + yellow_light_time <= time_consume) and (
+                tls_status.remain_2 + yellow_light_time + t[3] + yellow_light_time + t[0] + yellow_light_time + t[
+            1] + yellow_light_time + t[2] + yellow_light_time + t[3] + yellow_light_time > time_consume):
+            wait_time = tls_status.remain_2 + yellow_light_time + t[3] + yellow_light_time + t[0] + yellow_light_time + \
+                        t[1] + yellow_light_time + t[2] + yellow_light_time + t[3] + yellow_light_time - time_consume
+        elif (tls_status.remain_2 + yellow_light_time + t[3] + yellow_light_time + t[0] + yellow_light_time + t[
+            1] + yellow_light_time + t[2] + yellow_light_time + t[3] + yellow_light_time <= time_consume) and (
+                tls_status.remain_2 + yellow_light_time + t[3] + yellow_light_time + t[0] + yellow_light_time + t[
+            1] + yellow_light_time + t[2] + yellow_light_time + t[3] + yellow_light_time + t[
+                    0] + yellow_light_time > time_consume):
             wait_time = 0
-        elif tls_status.remain_2 > time_consume:
-            wait_time = tls_status.remain_2 - time_consume + t[3]
+        elif tls_status.remain_2 + yellow_light_time > time_consume:
+            wait_time = tls_status.remain_2 + yellow_light_time - time_consume + t[3] + yellow_light_time
 
     if tls_status.direction_3 == 2:
-        if tls_status.remain_3 > time_consume:
-            wait_time = tls_status.remain_3 - time_consume
-        elif (tls_status.remain_3 <= time_consume) and (tls_status.remain_3 + t[0] > time_consume):
+        if tls_status.remain_3 + yellow_light_time > time_consume:
+            wait_time = tls_status.remain_3 + yellow_light_time - time_consume
+        elif (tls_status.remain_3 + yellow_light_time <= time_consume) and (
+                tls_status.remain_3 + yellow_light_time + t[0] + yellow_light_time > time_consume):
             wait_time = 0
-        elif (tls_status.remain_3 + t[0] <= time_consume) and (tls_status.remain_3 + t[0] + t[1] > time_consume):
-            wait_time = tls_status.remain_3 + t[0] + t[1] - time_consume + t[2] + t[3]
-        elif (tls_status.remain_3 + t[0] + t[1] <= time_consume) and (
-                tls_status.remain_3 + t[0] + t[1] + t[2] > time_consume):
-            wait_time = tls_status.remain_3 + t[0] + t[1] + t[2] - time_consume + t[3]
-        elif (tls_status.remain_3 + t[0] + t[1] + t[2] <= time_consume) and (
-                tls_status.remain_3 + t[0] + t[1] + t[2] + t[3] > time_consume):
-            wait_time = tls_status.remain_3 + t[0] + t[1] + t[2] + t[3] - time_consume
-        elif (tls_status.remain_3 + t[0] + t[1] + t[2] + t[3] <= time_consume) and (
-                tls_status.remain_3 + t[0] + t[1] + t[2] + t[3] + t[0] > time_consume):
+        elif (tls_status.remain_3 + yellow_light_time + t[0] + yellow_light_time <= time_consume) and (
+                tls_status.remain_3 + yellow_light_time + t[0] + yellow_light_time + t[
+            1] + yellow_light_time > time_consume):
+            wait_time = tls_status.remain_3 + yellow_light_time + t[0] + yellow_light_time + t[
+                1] + yellow_light_time - time_consume + t[2] + yellow_light_time + t[3] + yellow_light_time
+        elif (tls_status.remain_3 + yellow_light_time + t[0] + yellow_light_time + t[
+            1] + yellow_light_time <= time_consume) and (
+                tls_status.remain_3 + yellow_light_time + t[0] + yellow_light_time + t[1] + yellow_light_time + t[
+            2] + yellow_light_time > time_consume):
+            wait_time = tls_status.remain_3 + yellow_light_time + t[0] + yellow_light_time + t[1] + yellow_light_time + \
+                        t[2] + yellow_light_time - time_consume + t[3] + yellow_light_time
+        elif (tls_status.remain_3 + yellow_light_time + t[0] + yellow_light_time + t[1] + yellow_light_time + t[
+            2] + yellow_light_time <= time_consume) and (
+                tls_status.remain_3 + yellow_light_time + t[0] + yellow_light_time + t[1] + yellow_light_time + t[
+            2] + yellow_light_time + t[3] + yellow_light_time > time_consume):
+            wait_time = tls_status.remain_3 + yellow_light_time + t[0] + yellow_light_time + t[1] + yellow_light_time + \
+                        t[2] + yellow_light_time + t[3] + yellow_light_time - time_consume
+        elif (tls_status.remain_3 + yellow_light_time + t[0] + yellow_light_time + t[1] + yellow_light_time + t[
+            2] + yellow_light_time + t[3] + yellow_light_time <= time_consume) and (
+                tls_status.remain_3 + yellow_light_time + t[0] + yellow_light_time + t[1] + yellow_light_time + t[
+            2] + yellow_light_time + t[3] + yellow_light_time + t[0] + yellow_light_time > time_consume):
             wait_time = 0
 
         if wait_time < 0:
             wait_time = 100
-
-    return wait_time
-
-    # time_arrival = tls_status.remain_0 + t[1] + t[2] + t[3]
-    # if tls_status.direction_1 == 2:
-    #     time_arrival = tls_status.remain_1 + t[2] + t[3]
-    # if tls_status.direction_2 == 2:
-    #     time_arrival = tls_status.remain_2 + t[3]
-    # if tls_status.direction_3 == 2:
-    #     time_arrival = tls_status.remain_3
-    # flag = 1
-    # if (t[0] < bound[0][0]) or (t[0] > bound[0][1]) or (t[1] < bound[1][0]) or (t[1] > bound[1][1]) or (
-    #         t[2] < bound[2][0]) or (t[2] > bound[2][1]) or (t[3] < bound[3][0]) or (t[3] > bound[3][1]) or (
-    #         phase_period > 150) or (phase_period < 50) or (time_consume - time_arrival > t[0]) or (time_consume - time_arrival < 0):
-    #     flag = 0
-    # # if (bound[0][0] <= t[0] <= bound[0][1]) & ( bound[1][0]<= t[1] <= bound[1][1]) & ( bound[2][0]<= t[2] <= bound[2][1]) & ( bound[3][0]<= t[3] <= bound[3][1]) & (90.0 <= t[0] + t[1] +t[2] + t[3] <= 130.0) :
-    # # flag = 1
-    # return flag
+    if wait_time <= 1:
+        flag = 1
+    else:
+        flag = 0
+    return flag
 
 
 def code(bound):
@@ -387,6 +439,7 @@ def code(bound):
         ret = np.trunc(bound[:, 0] + (bound[:, 1] - bound[:, 0]) * pick)  # 线性插值，编码结果以实数向量存入ret中
         # flag = test(len_chrom, bound, ret)  # 检验染色体的可行性
         flag = test(ret[0])
+        # print("flag", flag)
     return ret.tolist()[0]
 
 
@@ -505,20 +558,20 @@ def main():
     global G1
     global G2
     max_gen = 100  # 进化代数，即迭代次数
-    size_pop = 100  # 种群规模
+    size_pop = 300  # 种群规模
     delta = 0.1
     bound = [0, 0, 0, 0]
 
     # 染色体设置
     len_chrom = np.ones((1, 4))  # t1、t2、t3
     if tls_status.direction_0 == 2:
-        bound = [[15, 35], [15, 35], [15, 35], [15, 35]]
+        bound = [[20, 50], [10, 35], [15, 45], [10, 30]]
     if tls_status.direction_1 == 2:
-        bound = [[15, 40], [15, 35], [15, 35], [15, 35]]  # 数据范围
+        bound = [[20, 50], [10, 35], [15, 45], [10, 30]]  # 数据范围
     if tls_status.direction_2 == 2:
-        bound = [[15, 40], [15, 35], [15, 35], [15, 35]]  # 数据范围
+        bound = [[20, 50], [10, 35], [15, 45], [10, 30]]  # 数据范围
     if tls_status.direction_3 == 2:
-        bound = [[15, 40], [15, 35], [15, 35], [15, 35]]
+        bound = [[20, 50], [10, 35], [15, 45], [10, 30]]
     # ---------------------------种群初始化------------------------------------
     individuals = {'fitness': np.zeros((1, size_pop)).tolist()[0], 'chrom': []}  # 将种群信息定义为字典
     avg_fitness = []  # 每一代种群的平均适应度
@@ -551,8 +604,8 @@ def main():
         print("cross")
         individuals["chrom"] = cross(len_chrom, individuals["chrom"], size_pop, bound)
         # 变异
-        print("Mutation")
-        individuals["chrom"] = Mutation(len_chrom, individuals["chrom"], size_pop, i, max_gen, bound)
+        print("mutation")
+        individuals["chrom"] = mutation(len_chrom, individuals["chrom"], size_pop, i, max_gen, bound)
 
         # 计算适应
         for j in range(size_pop):
