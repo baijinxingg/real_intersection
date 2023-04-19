@@ -309,7 +309,7 @@ def test(code):
             3] + yellow_light_time + t[0] + yellow_light_time > time_consume):
             wait_time = 0
 
-    if tls_status.direction_1 == 2:
+    elif tls_status.direction_1 == 2:
         if (tls_status.remain_1 + yellow_light_time <= time_consume) and (
                 tls_status.remain_1 + yellow_light_time + t[2] + yellow_light_time > time_consume):
             wait_time = tls_status.remain_1 + yellow_light_time + t[2] + yellow_light_time - time_consume + t[
@@ -357,7 +357,7 @@ def test(code):
                     0] + yellow_light_time > time_consume):
             wait_time = 0
 
-    if tls_status.direction_2 == 2:
+    elif tls_status.direction_2 == 2:
         if (tls_status.remain_2 + yellow_light_time <= time_consume) and (
                 tls_status.remain_2 + yellow_light_time + t[3] + yellow_light_time > time_consume):
             wait_time = tls_status.remain_2 + yellow_light_time + t[3] + yellow_light_time - time_consume
@@ -392,7 +392,7 @@ def test(code):
         elif tls_status.remain_2 + yellow_light_time > time_consume:
             wait_time = tls_status.remain_2 + yellow_light_time - time_consume + t[3] + yellow_light_time
 
-    if tls_status.direction_3 == 2:
+    elif tls_status.direction_3 == 2:
         if tls_status.remain_3 + yellow_light_time > time_consume:
             wait_time = tls_status.remain_3 + yellow_light_time - time_consume
         elif (tls_status.remain_3 + yellow_light_time <= time_consume) and (
@@ -423,7 +423,10 @@ def test(code):
 
         if wait_time < 0:
             wait_time = 100
-    if wait_time <= 1:
+    # else:
+    #     print("error")
+    #     continue
+    if wait_time <= 2:
         flag = 1
     else:
         flag = 0
@@ -436,7 +439,15 @@ def code(bound):
     while flag == 0:
         pick = np.random.random_sample((1, len(bound)))
         bound = np.array(bound)
+        # print(bound)
+        # # print("bound", bound)
+        # print("bound.shape", bound.shape)
+        # print("bound[:, 0]", bound[:, 0])
+        # print("bound[:, 1] - bound[:, 0]", bound[:, 1] - bound[:, 0])
         ret = np.trunc(bound[:, 0] + (bound[:, 1] - bound[:, 0]) * pick)  # 线性插值，编码结果以实数向量存入ret中
+        # ret = ret.reshape(1, -1)
+        # print("ret", ret)
+        # print("维度", ret.shape)
         # flag = test(len_chrom, bound, ret)  # 检验染色体的可行性
         flag = test(ret[0])
         # print("flag", flag)
@@ -505,8 +516,8 @@ def fitness_function(x):
     for i in range(4):
         f += abs(sy[i] - lamda[i])
     # 解决float division by zero 的bug
-    # if f == 0:
-    #     f = 10
+    if f == 0:
+        f = 10
     return f
 
 
@@ -558,19 +569,21 @@ def main():
     global G1
     global G2
     max_gen = 100  # 进化代数，即迭代次数
-    size_pop = 300  # 种群规模
+    size_pop = 200  # 种群规模
     delta = 0.1
     bound = [0, 0, 0, 0]
 
     # 染色体设置
     len_chrom = np.ones((1, 4))  # t1、t2、t3
     if tls_status.direction_0 == 2:
-        bound = [[20, 50], [10, 35], [15, 45], [10, 30]]
+        bound = [[20, 50], [5, 35], [5, 45], [5, 30]]
     if tls_status.direction_1 == 2:
         bound = [[20, 50], [10, 35], [15, 45], [10, 30]]  # 数据范围
     if tls_status.direction_2 == 2:
         bound = [[20, 50], [10, 35], [15, 45], [10, 30]]  # 数据范围
     if tls_status.direction_3 == 2:
+        bound = [[20, 50], [10, 35], [15, 45], [10, 30]]
+    else:
         bound = [[20, 50], [10, 35], [15, 45], [10, 30]]
     # ---------------------------种群初始化------------------------------------
     individuals = {'fitness': np.zeros((1, size_pop)).tolist()[0], 'chrom': []}  # 将种群信息定义为字典
@@ -580,6 +593,7 @@ def main():
     # 初始化种群
     for i in range(size_pop):
         # 随机产生一个种群
+        # print("checking")
         individuals["chrom"].append(code(bound))
         # 编码（binary和grey的编码结果为一个实数，float的编码结果为一个实数向量）
         x = individuals["chrom"][i]
@@ -632,21 +646,22 @@ def main():
         trace.append(best_fitness)  # 记录每一代进化中最好的适应度
 
     x = best_chrom  # 最佳个体值
-    D = fitness_function(best_chrom)  # 延误误差D
-    print("绿信比差D", D)
+    green_by = fitness_function(best_chrom)  # 延误误差D
+    print("绿信比差D", green_by)
+    print(x)
     # E = D/sum(sum(q))     # 平均延误E
     # print("平均延误E",E)
     # 遗传算法结果分析
-    # plt.rcParams['font.sans-serif'] = ['SimHei']
-    # # plt.rcParams['font.sans-serif'] = ['KaiTi']   # 指定默认字体
-    # plt.rcParams['axes.unicode_minus'] = False
-    # fig, ax = plt.subplots(1, 1)
-    # plt.plot([i for i in range(len(trace))], trace, 'b--')
-    # plt.title('适应度曲线  ' '终止代数＝{}'.format(max_gen))
-    # plt.xlabel('进化代数')
-    # plt.ylabel('适应度')
-    # plt.legend('fz最佳适应度')
-    # plt.show()
+    plt.rcParams['font.sans-serif'] = ['SimHei']
+    # plt.rcParams['font.sans-serif'] = ['KaiTi']   # 指定默认字体
+    plt.rcParams['axes.unicode_minus'] = False
+    fig, ax = plt.subplots(1, 1)
+    plt.plot([i for i in range(len(trace))], trace, 'b--')
+    plt.title('适应度曲线  ' '终止代数＝{}'.format(max_gen))
+    plt.xlabel('进化代数')
+    plt.ylabel('适应度')
+    plt.legend('fz最佳适应度')
+    plt.show()
     G1 = [int(x[0]), int(x[1]), int(x[2]), int(x[3])]
     print("111111111111111111111111111111111", G1)
     publish = {"type": "sub", "topic": "/device-message-sender/TrafficLight/SN-TL-20220422-F01",
@@ -660,6 +675,7 @@ if __name__ == '__main__':
 
     G1 = [0, 0, 0, 0]
     G2 = [0, 0, 0, 0]
+    wait_time = -1
     print("======client main begin======")
     while True:
         asyncio.get_event_loop().run_until_complete(cloud_communication())  # 开启websocket线程
