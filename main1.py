@@ -594,7 +594,25 @@ def main():
     for i in range(size_pop):
         # 随机产生一个种群
         # print("checking")
-        individuals["chrom"].append(code(bound))
+        flag = 0
+        j = 0
+        ret = []
+        global speed_bus
+        global time_consume
+        speed_bus = 14
+        distance_intersection = 500
+        while flag == 0 and speed_bus >= 7:
+            time_consume = distance_intersection / speed_bus
+            pick = np.random.random_sample((1, len(bound)))
+            bound = np.array(bound)
+            ret = np.trunc((bound[:, 0] + (bound[:, 1] - bound[:, 0]) * pick))
+            flag = test(ret[0])
+            j += 1
+            if j >= 100:
+                j = 0
+                speed_bus -= 1
+            individuals["chrom"].append(ret.tolist()[0])
+        # individuals["chrom"].append(code(bound))
         # 编码（binary和grey的编码结果为一个实数，float的编码结果为一个实数向量）
         x = individuals["chrom"][i]
         # 计算适应度
@@ -649,6 +667,7 @@ def main():
     green_by = fitness_function(best_chrom)  # 延误误差D
     print("绿信比差D", green_by)
     print(x)
+    print("11111111111111111111111111111111", speed_bus)
     # E = D/sum(sum(q))     # 平均延误E
     # print("平均延误E",E)
     # 遗传算法结果分析
@@ -664,6 +683,7 @@ def main():
     plt.show()
     G1 = [int(x[0]), int(x[1]), int(x[2]), int(x[3])]
     print("111111111111111111111111111111111", G1)
+    print("11111111111111111111111111111111", speed_bus)
     publish = {"type": "sub", "topic": "/device-message-sender/TrafficLight/SN-TL-20220422-F01",
                "parameter": {"messageType": "INVOKE_FUNCTION", "functionId": "testPhase2",
                              "inputs": {"2_time": G1}, "headers": {"async": False}}, "id": "002"}  # 修改属性
@@ -676,6 +696,8 @@ if __name__ == '__main__':
     G1 = [0, 0, 0, 0]
     G2 = [0, 0, 0, 0]
     wait_time = -1
+    speed_bus = 11
+    time_consume = -1
     print("======client main begin======")
     while True:
         asyncio.get_event_loop().run_until_complete(cloud_communication())  # 开启websocket线程
