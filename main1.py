@@ -100,9 +100,11 @@ def cross(len_chrom, chrom, size_pop, bound):
 
         if pick_cr > p_cross:
             continue
-
+        chrom1 = chrom[index[0]]
+        chrom2 = chrom[index[1]]
         flag = 0
-        while flag == 0:
+        num = 0
+        while flag == 0 and num <= 50:
             tmp_chrom = copy.deepcopy(chrom)
             # 随机选择交叉位
             pick_ind = random.random()
@@ -149,6 +151,11 @@ def cross(len_chrom, chrom, size_pop, bound):
                 flag = 1
                 chrom[index[0]][pos] = tmp_chrom[index[0]][pos]
                 chrom[index[1]][pos] = tmp_chrom[index[1]][pos]
+            num = num + 1  # 检验次数设置
+
+            if num > 50 :
+                chrom[index[0]] = chrom1
+                chrom[index[1]] = chrom2
                 # print("change later", chrom[index[0]])
                 # print("change later", chrom[index[1]])
 
@@ -263,10 +270,10 @@ def mutation(len_chrom, chrom, size_pop, num, max_gen, bound):
                 flag = 1
                 chrom[i][pos] = tmp_chrom[i][pos]
 
-        #     num = num + 1  # 检验次数设置
-        #
-        # if num > 20:  # 如果大于20次，则不变异
-        #     chrom[i] = chrom1
+            num = num + 1  # 检验次数设置
+        
+        if num > 20:  # 如果大于20次，则不变异
+            chrom[i] = chrom1
 
     ret = copy.deepcopy(chrom)
     return ret
@@ -282,7 +289,10 @@ def test(code):
     # print("code[0]", code[0])
     phase_period = t[0] + t[1] + t[2] + t[3]  # 信号周期
     # time_consume = 500 m / 11 m/s
-    time_consume = 45.45  # 正常到达路口需要消耗的时间
+    # time_consume = 45.45  # 正常到达路口需要消耗的时间
+    # time_consume = 60.24 # 30km/h 时速到达路口时间
+    # time_consume = 64 # 30km/h 时速到达路口时间
+    time_consume = 500 / speed_bus
     # time_arrival = 0  # 经过计算到达路口时间
     yellow_light_time = 3
     if tls_status.direction_0 == 2:
@@ -426,6 +436,8 @@ def test(code):
     # else:
     #     print("error")
     #     continue
+    # print("******************************")
+    # print("wait_time", wait_time)
     if wait_time <= 2:
         flag = 1
     else:
@@ -436,7 +448,8 @@ def test(code):
 def code(bound):
     ret = []
     flag = 0
-    while flag == 0:
+    count = 0
+    while flag == 0 and count <= 100 :
         pick = np.random.random_sample((1, len(bound)))
         bound = np.array(bound)
         # print(bound)
@@ -450,7 +463,11 @@ def code(bound):
         # print("维度", ret.shape)
         # flag = test(len_chrom, bound, ret)  # 检验染色体的可行性
         flag = test(ret[0])
+        count += 1
         # print("flag", flag)
+    if count == 100:
+        print("code --- 无法单凭相位来计算，需要借助速度引导")
+        ret = [[0,0,0,0]]
     return ret.tolist()[0]
 
 
@@ -552,13 +569,23 @@ async def cloud_communication():
         tls_status.b_distance = Phase1_P3.get("b_distance")
         # tls_status.phase_1 = Phase1_P3.get("1_phase")
         # tls_status.phase_2 = Phase1_P3.get("2_phase")
-        print(Phase1_P3)
+        # print(Phase1_P3)
+        print("tls_status.direction_0--------------", tls_status.direction_0)
+        print("tls_status.remain_0-----------------", tls_status.remain_0)
+        print("tls_status.direction_1--------------", tls_status.direction_1)
+        print("tls_status.remain_1-----------------", tls_status.remain_1)
+        print("tls_status.direction_2--------------", tls_status.direction_2)
+        print("tls_status.remain_2-----------------", tls_status.remain_2)
+        print("tls_status.direction_3--------------", tls_status.direction_3)
+        print("tls_status.remain_3-----------------", tls_status.remain_3)
         pub = main()
         # print("main success 111111111111111")
         # await websocket.send(pub)
         # # await websocket.send(pub)
         # print(pub)
         # print("pub success 222222222222222")
+
+        
         # print(111111554444454444)
 
 
@@ -568,51 +595,86 @@ global publish
 def main():
     global G1
     global G2
+    global yellow_light_time
     max_gen = 100  # 进化代数，即迭代次数
     size_pop = 200  # 种群规模
     delta = 0.1
     bound = [0, 0, 0, 0]
-
+    global speed_bus
     # 染色体设置
     len_chrom = np.ones((1, 4))  # t1、t2、t3
-    if tls_status.direction_0 == 2:
-        bound = [[20, 50], [5, 35], [5, 45], [5, 30]]
-    if tls_status.direction_1 == 2:
+    # if tls_status.direction_0 == 2 :
+    #     if tls_status.remain_0 >= 30:
+    #         bound = [[20, 50], [10, 25], [15, 30], [15, 30]]
+    #     if tls_status.remain_0 < 30 or tls_status.direction_0 == 3:
+    #         bound = [[20, 50], [5, 15], [5, 20], [5, 10]]
+    if tls_status.direction_0 == 2 and tls_status.remain_0 >= 30:
+        bound = [[20, 50], [10, 25], [15, 30], [15, 30]]
+    elif tls_status.direction_0 == 2 and tls_status.remain_0 < 30:
+        bound = [[20, 50], [5, 15], [5, 20], [5, 10]]
+    elif tls_status.direction_0 == 3:
+        bound = [[20, 50], [5, 15], [5, 20], [5, 10]]
+    elif tls_status.direction_1 == 2 or tls_status.direction_1 == 3:
         bound = [[20, 50], [10, 35], [15, 45], [10, 30]]  # 数据范围
-    if tls_status.direction_2 == 2:
+    elif tls_status.direction_2 == 2 or tls_status.direction_2 == 3:
         bound = [[20, 50], [10, 35], [15, 45], [10, 30]]  # 数据范围
-    if tls_status.direction_3 == 2:
-        bound = [[20, 50], [10, 35], [15, 45], [10, 30]]
-    else:
-        bound = [[20, 50], [10, 35], [15, 45], [10, 30]]
+    elif tls_status.direction_3 == 2 or tls_status.direction_3 == 3:
+        bound = [[40, 60], [10, 35], [15, 45], [10, 30]]
+    # else:
+    #     bound = [[20, 60], [10, 35], [15, 45], [10, 30]]
     # ---------------------------种群初始化------------------------------------
+    print("$$$$$$$$$$$$$$$$$$$$", bound)
     individuals = {'fitness': np.zeros((1, size_pop)).tolist()[0], 'chrom': []}  # 将种群信息定义为字典
     avg_fitness = []  # 每一代种群的平均适应度
     best_fitness = []  # 每一代种群的最佳适应度
     best_chrom = []  # 适应度最好的染色体
-    # 初始化种群
+
+    if tls_status.direction_0 == 2 and tls_status.remain_0 >= 30:
+        print("无法单凭相位来计算，需要借助加速引导")
+        speed_bus = 500 / (tls_status.remain_0 + yellow_light_time)
+        # print("tls_status.remain_0 = ", tls_status.remain_0)
+        print("经过计算后，需要提速至",speed_bus)
+    if tls_status.direction_0 == 2 and tls_status.remain_0 < 30:
+        print("无法单凭相位来计算，需要借助减速引导")
+        speed_bus = 500 / (tls_status.remain_0 + 4*yellow_light_time + 30)
+        print("经过计算后，需要降速至",speed_bus)
+
+    # # 初始化种群
+    # for i in range(size_pop):
+    #     # 随机产生一个种群
+    #     # print("checking")
+    #     flag = 0
+    #     j = 0
+    #     ret = []
+    #     global speed_bus
+    #     global time_consume
+    #     speed_bus = 14
+    #     distance_intersection = 500
+    #     while flag == 0 and speed_bus >= 7:
+    #         time_consume = distance_intersection / speed_bus
+    #         pick = np.random.random_sample((1, len(bound)))
+    #         bound = np.array(bound)
+    #         ret = np.trunc((bound[:, 0] + (bound[:, 1] - bound[:, 0]) * pick))
+    #         flag = test(ret[0])
+    #         j += 1
+    #         if j >= 100:
+    #             j = 0
+    #             speed_bus -= 1
+    #         individuals["chrom"].append(ret.tolist()[0])
+    #     # individuals["chrom"].append(code(bound))
+    #     # 编码（binary和grey的编码结果为一个实数，float的编码结果为一个实数向量）
+    #     x = individuals["chrom"][i]
+    #     # 计算适应度
+    #     individuals["fitness"][i] = fitness_function(x)
     for i in range(size_pop):
         # 随机产生一个种群
         # print("checking")
-        flag = 0
-        j = 0
-        ret = []
-        global speed_bus
-        global time_consume
-        speed_bus = 14
-        distance_intersection = 500
-        while flag == 0 and speed_bus >= 7:
-            time_consume = distance_intersection / speed_bus
-            pick = np.random.random_sample((1, len(bound)))
-            bound = np.array(bound)
-            ret = np.trunc((bound[:, 0] + (bound[:, 1] - bound[:, 0]) * pick))
-            flag = test(ret[0])
-            j += 1
-            if j >= 100:
-                j = 0
-                speed_bus -= 1
-            individuals["chrom"].append(ret.tolist()[0])
-        # individuals["chrom"].append(code(bound))
+        encode_result = code(bound)
+        if encode_result[0] == [0,0,0,0]:
+            print("warnning warnning warnning")
+
+        individuals["chrom"].append(encode_result)
+
         # 编码（binary和grey的编码结果为一个实数，float的编码结果为一个实数向量）
         x = individuals["chrom"][i]
         # 计算适应度
@@ -664,6 +726,7 @@ def main():
         trace.append(best_fitness)  # 记录每一代进化中最好的适应度
 
     x = best_chrom  # 最佳个体值
+    print("check 1")
     green_by = fitness_function(best_chrom)  # 延误误差D
     print("绿信比差D", green_by)
     print(x)
@@ -683,7 +746,7 @@ def main():
     plt.show()
     G1 = [int(x[0]), int(x[1]), int(x[2]), int(x[3])]
     print("111111111111111111111111111111111", G1)
-    print("11111111111111111111111111111111", speed_bus)
+    # print("11111111111111111111111111111111", speed_bus)
     publish = {"type": "sub", "topic": "/device-message-sender/TrafficLight/SN-TL-20220422-F01",
                "parameter": {"messageType": "INVOKE_FUNCTION", "functionId": "testPhase2",
                              "inputs": {"2_time": G1}, "headers": {"async": False}}, "id": "002"}  # 修改属性
@@ -697,6 +760,7 @@ if __name__ == '__main__':
     G2 = [0, 0, 0, 0]
     wait_time = -1
     speed_bus = 11
+    yellow_light_time = 3
     time_consume = -1
     print("======client main begin======")
     while True:
