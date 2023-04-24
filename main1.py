@@ -153,7 +153,7 @@ def cross(len_chrom, chrom, size_pop, bound):
                 chrom[index[1]][pos] = tmp_chrom[index[1]][pos]
             num = num + 1  # 检验次数设置
 
-            if num > 50 :
+            if num > 50:
                 chrom[index[0]] = chrom1
                 chrom[index[1]] = chrom2
                 # print("change later", chrom[index[0]])
@@ -271,7 +271,7 @@ def mutation(len_chrom, chrom, size_pop, num, max_gen, bound):
                 chrom[i][pos] = tmp_chrom[i][pos]
 
             num = num + 1  # 检验次数设置
-        
+
         if num > 20:  # 如果大于20次，则不变异
             chrom[i] = chrom1
 
@@ -292,7 +292,7 @@ def test(code):
     # time_consume = 45.45  # 正常到达路口需要消耗的时间
     # time_consume = 60.24 # 30km/h 时速到达路口时间
     # time_consume = 64 # 30km/h 时速到达路口时间
-    time_consume = 500 / speed_bus
+    time_consume = distence_intersection / speed_bus
     # time_arrival = 0  # 经过计算到达路口时间
     yellow_light_time = 3
     if tls_status.direction_0 == 2:
@@ -449,7 +449,7 @@ def code(bound):
     ret = []
     flag = 0
     count = 0
-    while flag == 0 and count <= 100 :
+    while flag == 0 and count <= 100:
         pick = np.random.random_sample((1, len(bound)))
         bound = np.array(bound)
         # print(bound)
@@ -467,7 +467,7 @@ def code(bound):
         # print("flag", flag)
     if count == 100:
         print("code --- 无法单凭相位来计算，需要借助速度引导")
-        ret = [[0,0,0,0]]
+        ret = [[0, 0, 0, 0]]
     return ret.tolist()[0]
 
 
@@ -570,6 +570,10 @@ async def cloud_communication():
         # tls_status.phase_1 = Phase1_P3.get("1_phase")
         # tls_status.phase_2 = Phase1_P3.get("2_phase")
         # print(Phase1_P3)
+
+        # if tls_status.direction_0 == 1 and tls_status.direction_1 == 1 and tls_status.direction_2 == 1 and tls_status.direction_3 == 1:
+        #     time.sleep(1)
+
         print("tls_status.direction_0--------------", tls_status.direction_0)
         print("tls_status.remain_0-----------------", tls_status.remain_0)
         print("tls_status.direction_1--------------", tls_status.direction_1)
@@ -578,24 +582,46 @@ async def cloud_communication():
         print("tls_status.remain_2-----------------", tls_status.remain_2)
         print("tls_status.direction_3--------------", tls_status.direction_3)
         print("tls_status.remain_3-----------------", tls_status.remain_3)
-        pub = main()
+        # pub = main()
         # print("main success 111111111111111")
         # await websocket.send(pub)
         # # await websocket.send(pub)
         # print(pub)
         # print("pub success 222222222222222")
 
-        
         # print(111111554444454444)
 
 
+async def tls_process():
+    async with websockets.connect(
+            "ws://aiot.cloudxin.cn/ailinks/messaging/b0808f7899c74750542b5b54f6db73e4") as websocket1:
+        async with websockets.connect(
+                "ws://aiot.cloudxin.cn/ailinks/messaging/b0808f7899c74750542b5b54f6db73e4") as websocket2:
+            # if switch1 == 1 and switch2 == 1:
+            # if tls_status.direction_0 == 1 and tls_status.direction_1 == 1 and tls_status.direction_2 == 1 and tls_status.direction_3 == 1:
+            #     time.sleep(2)
+            #     continue
+            # if switch == 1:
+            # if tls_status.direction_0 != 1 and tls_status.direction_1 != 1 and tls_status.direction_2 != 1 and tls_status.direction_3 != 1:
+            pub, pub2 = main()
+            await websocket1.send(pub)
+            print("第一个灯发送")
+            print(pub)
+            await websocket2.send(pub2)
+            print("第二个灯发送")
+            print(pub2)
+
+
 global publish
+global publish_2
 
 
 def main():
     global G1
     global G2
     global yellow_light_time
+    global distence_intersection
+    global max_gen
     max_gen = 100  # 进化代数，即迭代次数
     size_pop = 200  # 种群规模
     delta = 0.1
@@ -603,6 +629,8 @@ def main():
     global speed_bus
     # 染色体设置
     len_chrom = np.ones((1, 4))  # t1、t2、t3
+
+
     # if tls_status.direction_0 == 2 :
     #     if tls_status.remain_0 >= 30:
     #         bound = [[20, 50], [10, 25], [15, 30], [15, 30]]
@@ -613,9 +641,9 @@ def main():
     elif tls_status.direction_0 == 2 and tls_status.remain_0 < 30:
         bound = [[20, 50], [5, 15], [5, 20], [5, 10]]
     elif tls_status.direction_0 == 3:
-        bound = [[20, 50], [5, 15], [5, 20], [5, 10]]
+        bound = [[20, 50], [10, 20], [15, 20], [10, 20]]  # 数据范围
     elif tls_status.direction_1 == 2 or tls_status.direction_1 == 3:
-        bound = [[20, 50], [10, 35], [15, 45], [10, 30]]  # 数据范围
+        bound = [[20, 50], [10, 35], [10, 45], [10, 30]]  # 数据范围
     elif tls_status.direction_2 == 2 or tls_status.direction_2 == 3:
         bound = [[20, 50], [10, 35], [15, 45], [10, 30]]  # 数据范围
     elif tls_status.direction_3 == 2 or tls_status.direction_3 == 3:
@@ -629,16 +657,24 @@ def main():
     best_fitness = []  # 每一代种群的最佳适应度
     best_chrom = []  # 适应度最好的染色体
 
+
     if tls_status.direction_0 == 2 and tls_status.remain_0 >= 30:
         print("无法单凭相位来计算，需要借助加速引导")
-        speed_bus = 500 / (tls_status.remain_0 + yellow_light_time)
+        speed_bus = distence_intersection / (tls_status.remain_0 + yellow_light_time - 2)
+        max_gen = 10  # 进化代数，即迭代次数
         # print("tls_status.remain_0 = ", tls_status.remain_0)
-        print("经过计算后，需要提速至",speed_bus)
+        print("经过计算后，需要提速至", speed_bus)
     if tls_status.direction_0 == 2 and tls_status.remain_0 < 30:
         print("无法单凭相位来计算，需要借助减速引导")
-        speed_bus = 500 / (tls_status.remain_0 + 4*yellow_light_time + 30)
-        print("经过计算后，需要降速至",speed_bus)
+        speed_bus = distence_intersection / (tls_status.remain_0 + 4 * yellow_light_time + 30)
+        print("经过计算后，需要降速至", speed_bus)
+    if tls_status.direction_0 == 3:
+        print("无法单凭相位来计算，需要借助减速引导")
+        speed_bus = distence_intersection / (4 * yellow_light_time + 15 + 15 + 15 + tls_status.remain_0)
 
+    if tls_status.direction_3 == 2 and tls_status.remain_3 <= 4:
+        print("无法单凭相位来计算，需要借助加速引导")
+        speed_bus = distence_intersection / (tls_status.remain_3 + yellow_light_time + 30)
     # # 初始化种群
     # for i in range(size_pop):
     #     # 随机产生一个种群
@@ -670,7 +706,7 @@ def main():
         # 随机产生一个种群
         # print("checking")
         encode_result = code(bound)
-        if encode_result[0] == [0,0,0,0]:
+        if encode_result[0] == [0, 0, 0, 0]:
             print("warnning warnning warnning")
 
         individuals["chrom"].append(encode_result)
@@ -731,27 +767,35 @@ def main():
     print("绿信比差D", green_by)
     print(x)
     print("11111111111111111111111111111111", speed_bus)
-    # E = D/sum(sum(q))     # 平均延误E
-    # print("平均延误E",E)
-    # 遗传算法结果分析
-    plt.rcParams['font.sans-serif'] = ['SimHei']
-    # plt.rcParams['font.sans-serif'] = ['KaiTi']   # 指定默认字体
-    plt.rcParams['axes.unicode_minus'] = False
-    fig, ax = plt.subplots(1, 1)
-    plt.plot([i for i in range(len(trace))], trace, 'b--')
-    plt.title('适应度曲线  ' '终止代数＝{}'.format(max_gen))
-    plt.xlabel('进化代数')
-    plt.ylabel('适应度')
-    plt.legend('fz最佳适应度')
-    plt.show()
+    speed_km = speed_bus * 3.6
+    # # E = D/sum(sum(q))     # 平均延误E
+    # # print("平均延误E",E)
+    # # 遗传算法结果分析
+    # plt.rcParams['font.sans-serif'] = ['SimHei']
+    # # plt.rcParams['font.sans-serif'] = ['KaiTi']   # 指定默认字体
+    # plt.rcParams['axes.unicode_minus'] = False
+    # fig, ax = plt.subplots(1, 1)
+    # plt.plot([i for i in range(len(trace))], trace, 'b--')
+    # plt.title('适应度曲线  ' '终止代数＝{}'.format(max_gen))
+    # plt.xlabel('进化代数')
+    # plt.ylabel('适应度')
+    # plt.legend('fz最佳适应度')
+    # plt.show()
     G1 = [int(x[0]), int(x[1]), int(x[2]), int(x[3])]
     print("111111111111111111111111111111111", G1)
     # print("11111111111111111111111111111111", speed_bus)
-    publish = {"type": "sub", "topic": "/device-message-sender/TrafficLight/SN-TL-20220422-F01",
-               "parameter": {"messageType": "INVOKE_FUNCTION", "functionId": "testPhase2",
-                             "inputs": {"2_time": G1}, "headers": {"async": False}}, "id": "002"}  # 修改属性
-    pub = json.dumps(publish)
-    return pub
+    publish = {"type": "sub",
+               "topic": "/device-message-sender/TrafficLight/SN-TL-20230410-F01",
+               "parameter": {"messageType": "INVOKE_FUNCTION", "functionId": "guidephase",
+                             "inputs": {"adjust_time": G1}, "headers": {"async": False}}, "id": "002"}  # 修改属性
+    publish_2 = {"type": "sub",
+                 "topic": "/device-message-sender/SmartBox/SN-SBOX-20220314-F01",
+                 "parameter": {"messageType": "INVOKE_FUNCTION", "functionId": "testSpeed",
+                               "inputs": {"testSpeed": speed_km}, "headers": {"async": False}}, "id": "003"}  # 修改属性
+    pub_1 = json.dumps(publish)
+    pub_2 = json.dumps(publish_2)
+
+    return pub_1, pub_2
 
 
 if __name__ == '__main__':
@@ -762,8 +806,13 @@ if __name__ == '__main__':
     speed_bus = 11
     yellow_light_time = 3
     time_consume = -1
+    distence_intersection = 500
     print("======client main begin======")
     while True:
+        
         asyncio.get_event_loop().run_until_complete(cloud_communication())  # 开启websocket线程
+        if tls_status.direction_0 == 1 and tls_status.direction_1 == 1 and tls_status.direction_2 == 1 and tls_status.direction_3 == 1:
+            continue
+        asyncio.get_event_loop().run_until_complete(tls_process())
         # asyncio.get_event_loop().run_forever()
         # time.sleep(3)
